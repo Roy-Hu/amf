@@ -13,6 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/free5gc/amf/internal/logger"
+	"github.com/free5gc/amf/pkg/factory"
 	"github.com/free5gc/nas/nasMessage"
 	"github.com/free5gc/nas/nasType"
 	"github.com/free5gc/nas/security"
@@ -121,6 +122,11 @@ type AmfUe struct {
 	AmPolicyAssociation          *models.PolicyAssociation
 	RequestTriggerLocationChange bool // true if AmPolicyAssociation.Trigger contains RequestTrigger_LOC_CH
 	ConfigurationUpdateMessage   []byte
+	/* context about CHF */
+	ChfId            string
+	ChfUri           string
+	ChargingBehavior factory.ChargingBehavior
+	ChargingId       int32
 	/* UeContextForHandover*/
 	HandoverNotifyUri string
 	/* N1N2Message */
@@ -261,6 +267,7 @@ func (ue *AmfUe) init() {
 	ue.onGoing[models.AccessType__3_GPP_ACCESS] = new(OnGoing)
 	ue.onGoing[models.AccessType__3_GPP_ACCESS].Procedure = OnGoingProcedureNothing
 	ue.ReleaseCause = make(map[models.AccessType]*CauseAll)
+	ue.ChargingBehavior = ue.servingAMF.ChargingProfile[0]
 }
 
 func (ue *AmfUe) ServingAMF() *AMFContext {

@@ -83,6 +83,8 @@ func InitAmfContext(context *context.AMFContext) {
 	context.T3565Cfg = configuration.T3565
 	context.T3570Cfg = configuration.T3570
 	context.Locality = configuration.Locality
+
+	context.ChargingProfile = configuration.ChargingProfile
 }
 
 func getIntAlgOrder(integrityOrder []string) (intOrder []uint8) {

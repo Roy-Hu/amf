@@ -80,6 +80,7 @@ type Configuration struct {
 	T3502Value                      int                       `yaml:"t3502Value,omitempty" valid:"required, type(int)"`
 	T3512Value                      int                       `yaml:"t3512Value,omitempty" valid:"required, type(int)"`
 	Non3gppDeregistrationTimerValue int                       `yaml:"non3gppDeregistrationTimerValue,omitempty" valid:"-"`
+	ChargingProfile                 []ChargingBehavior        `yaml:"chargingProfile,omitempty" valid:"required"`
 	T3513                           TimerValue                `yaml:"t3513" valid:"required"`
 	T3522                           TimerValue                `yaml:"t3522" valid:"required"`
 	T3550                           TimerValue                `yaml:"t3550" valid:"required"`
@@ -239,6 +240,39 @@ func (c *Configuration) validate() (bool, error) {
 		return false, err
 	}
 
+	if c.ChargingProfile != nil {
+		var errs govalidator.Errors
+		for _, v := range c.ChargingProfile {
+			if _, err := v.validate(); err != nil {
+				errs = append(errs, err)
+			}
+		}
+		if len(errs) > 0 {
+			return false, error(errs)
+		}
+	}
+
+	if _, err := govalidator.ValidateStruct(c); err != nil {
+		return false, appendInvalid(err)
+	}
+
+	return true, nil
+}
+
+type ChargingBehavior struct {
+	Index                     int                `yaml:"index" valid:"type(int)"`
+	ChfAddresses              []string           `yaml:"chfAddresses" valid:"optional, url"`
+	RegistrationCharging      AmfChargingTrigger `yaml:"registrationCharging" valid:"required"`
+	N2ConnectionsCharging     AmfChargingTrigger `yaml:"n2ConnectionsCharging" valid:"optional"`
+	LocationReportingCharging AmfChargingTrigger `yaml:"locationReportingCharging" valid:"optional"`
+}
+
+type AmfChargingTrigger struct {
+	Enable           bool   `yaml:"enable" valid:"type(bool)"`
+	ChargingScenario string `yaml:"chargingScenario" valid:"type(string)"`
+}
+
+func (c *ChargingBehavior) validate() (bool, error) {
 	if _, err := govalidator.ValidateStruct(c); err != nil {
 		return false, appendInvalid(err)
 	}

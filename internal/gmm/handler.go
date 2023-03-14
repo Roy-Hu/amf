@@ -716,6 +716,47 @@ func HandleInitialRegistration(ue *context.AmfUe, anType models.AccessType) erro
 
 	if anType == models.AccessType__3_GPP_ACCESS {
 		gmm_message.SendRegistrationAccept(ue, anType, nil, nil, nil, nil, nil)
+
+		if ue.ChargingBehavior.RegistrationCharging.Enable && ue.ChargingBehavior.RegistrationCharging.ChargingScenario == string(models.OneTimeEventType_PEC) {
+			ue.GmmLog.Info("Registration PEC Charging enabled")
+			param = Nnrf_NFDiscovery.SearchNFInstancesParamOpts{
+				Supi: optional.NewString(ue.Supi),
+			}
+			for {
+				resp, err := consumer.SendSearchNFInstances(amfSelf.NrfUri, models.NfType_CHF, models.NfType_AMF, &param)
+				if err != nil {
+					ue.GmmLog.Error("AMF can not select an CHF by NRF")
+				} else {
+					// select the first CHF, TODO: select base on other info
+					var chfUri string
+					for _, nfProfile := range resp.NfInstances {
+						chfUri = util.SearchNFServiceUri(nfProfile, models.ServiceName_NCHF_CONVERGEDCHARGING,
+							models.NfServiceStatus_REGISTERED)
+						if chfUri != "" {
+							ue.ChfId = nfProfile.NfInstanceId
+							break
+						}
+					}
+					if ue.ChfUri = chfUri; ue.ChfUri == "" {
+						ue.GmmLog.Error("AMF can not select an PCF by NRF")
+					} else {
+						break
+					}
+				}
+				time.Sleep(500 * time.Millisecond) // sleep a while when search NF Instance fail
+			}
+			ue.GmmLog.Info("Send PEC Charging Request")
+			_, problemDetails, err = consumer.SendConvergedChargingRequest(ue)
+			if problemDetails != nil {
+				ue.GmmLog.Errorf("Sending Charging Request Failed Problem[%v]", problemDetails)
+			} else if err != nil {
+				ue.GmmLog.Errorf("Sending Charging Request Error[%v]", err)
+			}
+			ue.ChargingId++
+		} else {
+			ue.GmmLog.Info("Registration PEC Charging disabled")
+		}
+
 	} else {
 		// TS 23.502 4.12.2.2 10a ~ 13: if non-3gpp, AMF should send initial context setup request to N3IWF first,
 		// and send registration accept after receiving initial context setup response

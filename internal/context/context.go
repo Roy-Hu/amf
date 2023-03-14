@@ -67,6 +67,7 @@ type AMFContext struct {
 	T3502Value                      int      // unit is second
 	T3512Value                      int      // unit is second
 	Non3gppDeregistrationTimerValue int      // unit is second
+	ChargingProfile                 []factory.ChargingBehavior
 	// read-only fields
 	T3513Cfg factory.TimerValue
 	T3522Cfg factory.TimerValue
